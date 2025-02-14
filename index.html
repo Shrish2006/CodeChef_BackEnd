@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #e3f2fd, #ffffff);
+            overflow: hidden;
+            position: relative;
+        }
+
+        h1 {
+            margin: 20px 0;
+            font-size: 2rem;
+            color: #333;
+        }
+
+        .form-container {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            width: 300px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 800px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .delete-btn, .update-btn {
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+        }
+
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .update-btn {
+            background-color: #2196F3;
+        }
+
+        .update-btn:hover {
+            background-color: #1976D2;
+        }
+
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .modal input {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        
+        .background-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: move 15s infinite ease-in-out;
+        }
+
+        .circle:nth-child(1) {
+            width: 150px;
+            height: 150px;
+            background: #90caf9;
+            top: 10%;
+            left: 15%;
+        }
+
+        .circle:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            background: #b2ebf2;
+            top: 50%;
+            left: 70%;
+        }
+
+        .circle:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            background: #fff9c4;
+            top: 70%;
+            left: 30%;
+        }
+
+        @keyframes move {
+            0% {
+                transform: translateY(0px) translateX(0px);
+            }
+            50% {
+                transform: translateY(-20px) translateX(20px);
+            }
+            100% {
+                transform: translateY(0px) translateX(0px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+    </div>
+    <h1>Inventory</h1>
+    <div class="form-container">
+        <input type="text" id="title" placeholder="Enter Title">
+        <input type="text" id="description" placeholder="Enter Description">
+        <button onclick="addTodo()">Submit</button>
+    </div>
+    <table id="todoTable">
+        <thead>
+            <tr>
+                <th>Sno</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Date Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+
+    
+    <div class="modal" id="updateModal">
+        <h3>Update Todo</h3>
+        <input type="text" id="updateTitle" placeholder="Enter New Title">
+        <input type="text" id="updateDescription" placeholder="Enter New Description">
+        <div class="modal-buttons">
+            <button onclick="closeModal()">Cancel</button>
+            <button onclick="saveUpdate()">Save</button>
+        </div>
+    </div>
+    <div class="overlay" id="overlay"></div>
+
+    <script>
+        let sno = 0;
+        let currentRow;
+
+        function addTodo() {
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+
+            if (!title || !description) {
+                alert('Please fill out both fields.');
+                return;
+            }
+
+            sno++;
+            const dateCreated = new Date().toLocaleString();
+            const tableBody = document.getElementById('todoTable').querySelector('tbody');
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>${sno}</td>
+                <td>${title}</td>
+                <td>${description}</td>
+                <td>${dateCreated}</td>
+                <td>
+                    <button class="update-btn" onclick="openModal(this)">Update</button>
+                    <button class="delete-btn" onclick="deleteTodo(this)">Delete</button>
+                </td>
+            `;
+
+            tableBody.appendChild(row);
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+        }
+
+        function deleteTodo(button) {
+            const row = button.parentElement.parentElement;
+            row.remove();
+            updateSerialNumbers();
+        }
+
+        function updateSerialNumbers() {
+            const rows = document.querySelectorAll('#todoTable tbody tr');
+            sno = 0;
+
+            rows.forEach(row => {
+                sno++;
+                row.children[0].textContent = sno;
+            });
+        }
+
+        function openModal(button) {
+            currentRow = button.parentElement.parentElement;
+            document.getElementById('updateTitle').value = currentRow.children[1].textContent;
+            document.getElementById('updateDescription').value = currentRow.children[2].textContent;
+            document.getElementById('updateModal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('updateModal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function saveUpdate() {
+            const newTitle = document.getElementById('updateTitle').value;
+            const newDescription = document.getElementById('updateDescription').value;
+
+            if (!newTitle || !newDescription) {
+                alert('Please fill out both fields.');
+                return;
+            }
+
+            currentRow.children[1].textContent = newTitle;
+            currentRow.children[2].textContent = newDescription;
+            closeModal();
+        }
+    </script>
+</body>
+</html>
